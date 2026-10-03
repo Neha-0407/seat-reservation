@@ -33,5 +33,59 @@ public class Seat {
     public Seat() {
     }
 
-    // Generate getters and setters using your IDE.
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
+    public UUID getShowId() {
+        return showId;
+    }
+
+    public void setShowId(UUID showId) {
+        this.showId = showId;
+    }
+
+    public UUID getCategoryId() {
+        return categoryId;
+    }
+
+    public void setCategoryId(UUID categoryId) {
+        this.categoryId = categoryId;
+    }
+
+    public String getSeatNumber() {
+        return seatNumber;
+    }
+
+    public void setSeatNumber(String seatNumber) {
+        this.seatNumber = seatNumber;
+    }
+
+    public SeatStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(SeatStatus status) {
+        this.status = status;
+    }
+
+    public UUID getReservedBy() {
+        return reservedBy;
+    }
+
+    public void setReservedBy(UUID reservedBy) {
+        this.reservedBy = reservedBy;
+    }
+
+    public OffsetDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(OffsetDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
 }

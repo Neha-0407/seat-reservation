@@ -21,5 +21,27 @@ public class ReservationSeat {
     public ReservationSeat() {
     }
 
-    // Generate getters and setters using your IDE.
+    public ReservationSeatId getId() {
+        return id;
+    }
+
+    public void setId(ReservationSeatId id) {
+        this.id = id;
+    }
+
+    public UUID getShowId() {
+        return showId;
+    }
+
+    public void setShowId(UUID showId) {
+        this.showId = showId;
+    }
+
+    public Long getUnitPricePaise() {
+        return unitPricePaise;
+    }
+
+    public void setUnitPricePaise(Long unitPricePaise) {
+        this.unitPricePaise = unitPricePaise;
+    }
 }

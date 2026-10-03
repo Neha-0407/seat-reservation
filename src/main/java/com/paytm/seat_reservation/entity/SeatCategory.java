@@ -22,5 +22,35 @@ public class SeatCategory {
     public SeatCategory() {
     }
 
-    // Generate getters and setters using your IDE.
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
+    public UUID getShowId() {
+        return showId;
+    }
+
+    public void setShowId(UUID showId) {
+        this.showId = showId;
+    }
+
+    public String getCategoryName() {
+        return categoryName;
+    }
+
+    public void setCategoryName(String categoryName) {
+        this.categoryName = categoryName;
+    }
+
+    public Long getPricePaise() {
+        return pricePaise;
+    }
+
+    public void setPricePaise(Long pricePaise) {
+        this.pricePaise = pricePaise;
+    }
 }
