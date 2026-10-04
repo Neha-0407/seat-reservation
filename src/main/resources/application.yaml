@@ -22,6 +22,28 @@ spring:
   flyway: 
     enabled: true 
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-components: always
+      show-details: never
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState,db
+
+logging:
+  structured:
+    format:
+      console: logstash
+
 app:
   security:
     jwt:

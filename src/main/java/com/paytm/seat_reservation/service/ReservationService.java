@@ -11,6 +11,7 @@ import com.paytm.seat_reservation.entity.SeatCategory;
 import com.paytm.seat_reservation.entity.SeatStatus;
 import com.paytm.seat_reservation.entity.Show;
 import com.paytm.seat_reservation.exception.ReservationConflictException;
+import com.paytm.seat_reservation.exception.ReservationDeclineReason;
 import com.paytm.seat_reservation.repository.ReservationRepository;
 import com.paytm.seat_reservation.repository.ReservationSeatRepository;
 import com.paytm.seat_reservation.repository.SeatRepository;
@@ -20,6 +21,9 @@ import com.paytm.seat_reservation.repository.UserShowLockRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.access.AccessDeniedException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -32,6 +36,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class ReservationService {
+
+    private static final Logger logger = LoggerFactory.getLogger(ReservationService.class);
 
     private final ReservationRepository reservationRepository;
     private final ReservationSeatRepository reservationSeatRepository;
@@ -70,7 +76,9 @@ public class ReservationService {
 
         List<String> sortedSeatNumbers = request.getSeats().stream().sorted().toList();
         if (new HashSet<>(sortedSeatNumbers).size() != sortedSeatNumbers.size()) {
-            throw new ReservationConflictException("A seat may only be requested once");
+            throw new ReservationConflictException(
+                    ReservationDeclineReason.DUPLICATE_SEAT,
+                    "A seat may only be requested once");
         }
         String requestHash = sortedSeatNumbers.stream()
             .map(seatNumber -> seatNumber.length() + ":" + seatNumber)
@@ -83,8 +91,16 @@ public class ReservationService {
         if (existingReservation.isPresent()) {
             Reservation existing = existingReservation.get();
             if (!existing.getRequestHash().equals(requestHash)) {
-                throw new ReservationConflictException("Idempotency key was already used with different seats");
+                throw new ReservationConflictException(
+                    ReservationDeclineReason.IDEMPOTENCY_KEY_REUSED,
+                    "Idempotency key was already used with different seats");
             }
+                logger.atDebug()
+                    .addKeyValue("event", "reservation_idempotency_replay")
+                    .addKeyValue("request_id", MDC.get("request_id"))
+                    .addKeyValue("show_id", show.getId())
+                    .addKeyValue("reservation_id", existing.getId())
+                    .log("reservation_idempotency_replay");
             return toResponseForSeatIds(existing, reservationSeatRepository.findByIdReservationId(existing.getId()).stream()
                     .map(reservationSeat -> reservationSeat.getId().getSeatId())
                     .toList());
@@ -92,7 +108,9 @@ public class ReservationService {
 
         long alreadyReserved = reservationSeatRepository.countConfirmedSeatsForUserAndShow(show.getId(), userId);
         if (alreadyReserved + sortedSeatNumbers.size() > show.getPerUserLimit()) {
-            throw new ReservationConflictException("Seat selection exceeds per-user limit");
+            throw new ReservationConflictException(
+                    ReservationDeclineReason.PER_USER_LIMIT,
+                    "Seat selection exceeds per-user limit");
         }
 
         List<Seat> seats = seatRepository.findSeatsForUpdateByNumbers(show.getId(), sortedSeatNumbers);
@@ -110,7 +128,9 @@ public class ReservationService {
                 throw new IllegalStateException("Seat category not found for seat: " + seat.getId());
             }
             if (seat.getStatus() != SeatStatus.AVAILABLE) {
-                throw new ReservationConflictException("Seat is already taken: " + seat.getId());
+                throw new ReservationConflictException(
+                        ReservationDeclineReason.SEAT_TAKEN,
+                        "Seat is already taken: " + seat.getId());
             }
         }
 
@@ -172,11 +192,15 @@ public class ReservationService {
 
         List<Seat> seats = seatRepository.findSeatsForUpdate(reservation.getShowId(), seatIds);
         if (seats.size() != seatIds.size()) {
-            throw new ReservationConflictException("Reservation seat records are inconsistent");
+            throw new ReservationConflictException(
+                    ReservationDeclineReason.RESERVATION_INCONSISTENT,
+                    "Reservation seat records are inconsistent");
         }
         for (Seat seat : seats) {
             if (!reservationId.equals(seat.getReservedBy()) || seat.getStatus() != SeatStatus.CONFIRMED) {
-                throw new ReservationConflictException("Reservation no longer owns all of its seats");
+                throw new ReservationConflictException(
+                        ReservationDeclineReason.RESERVATION_INCONSISTENT,
+                        "Reservation no longer owns all of its seats");
             }
             seat.setReservedBy(null);
             seat.setStatus(SeatStatus.AVAILABLE);

@@ -37,7 +37,9 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -86,6 +88,27 @@ class SeatReservationApplicationTests {
 			.andExpect(jsonPath("$.per_user_limit").value(4))
 				.andExpect(jsonPath("$.seats.length()").value(2))
 				.andExpect(jsonPath("$.seats[0].status").value("available"));
+	}
+
+	@Test
+	void healthProbesArePublicAndReadinessChecksDatabase() throws Exception {
+		mockMvc.perform(get("/actuator/health/liveness").header("X-Request-ID", "probe-live-1"))
+				.andExpect(status().isOk())
+				.andExpect(header().string("X-Request-ID", "probe-live-1"))
+				.andExpect(jsonPath("$.status").value("UP"));
+
+		mockMvc.perform(get("/actuator/health/readiness").header("X-Request-ID", "probe-ready-1"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.status").value("UP"))
+				.andExpect(jsonPath("$.components.db.status").value("UP"));
+	}
+
+	@Test
+	void invalidRequestIdIsReplacedWithGeneratedId() throws Exception {
+		mockMvc.perform(get("/actuator/health/liveness").header("X-Request-ID", "bad/id"))
+				.andExpect(status().isOk())
+				.andExpect(header().exists("X-Request-ID"))
+				.andExpect(header().string("X-Request-ID", org.hamcrest.Matchers.not("bad/id")));
 	}
 
 		    @Test
