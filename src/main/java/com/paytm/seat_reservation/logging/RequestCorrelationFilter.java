@@ -40,7 +40,6 @@ public class RequestCorrelationFilter extends OncePerRequestFilter {
             long durationMs = (System.nanoTime() - startedAt) / 1_000_000;
             logger.atInfo()
                     .addKeyValue("event", "http_request_completed")
-                    .addKeyValue("request_id", requestId)
                     .addKeyValue("http_method", request.getMethod())
                     .addKeyValue("path", request.getRequestURI())
                     .addKeyValue("status", response.getStatus())

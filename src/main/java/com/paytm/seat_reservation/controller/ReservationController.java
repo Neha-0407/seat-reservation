@@ -6,7 +6,6 @@ import com.paytm.seat_reservation.service.ReservationService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -38,7 +37,6 @@ public class ReservationController {
         ReservationResponse reservation = reservationService.reserveSeats(showId, authentication.getName(), request);
         logger.atInfo()
             .addKeyValue("event", "reservation_confirmed")
-            .addKeyValue("request_id", MDC.get("request_id"))
             .addKeyValue("reservation_id", reservation.getReservationId())
             .addKeyValue("show_id", reservation.getShowId())
             .addKeyValue("seat_count", reservation.getSeats().size())
@@ -55,7 +53,6 @@ public class ReservationController {
         ReservationResponse reservation = reservationService.cancelReservation(authentication.getName(), reservationId);
         logger.atInfo()
             .addKeyValue("event", "reservation_cancelled")
-            .addKeyValue("request_id", MDC.get("request_id"))
             .addKeyValue("reservation_id", reservation.getReservationId())
             .addKeyValue("show_id", reservation.getShowId())
             .addKeyValue("seat_count", reservation.getSeats().size())

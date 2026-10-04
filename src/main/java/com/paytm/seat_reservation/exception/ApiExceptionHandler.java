@@ -1,5 +1,6 @@
 package com.paytm.seat_reservation.exception;
 
+import com.paytm.seat_reservation.metrics.ReservationMetrics;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -18,6 +19,11 @@ import java.util.Map;
 public class ApiExceptionHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(ApiExceptionHandler.class);
+    private final ReservationMetrics reservationMetrics;
+
+    public ApiExceptionHandler(ReservationMetrics reservationMetrics) {
+        this.reservationMetrics = reservationMetrics;
+    }
 
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<Map<String, Object>> handleApiException(ApiException exception) {
@@ -29,9 +35,9 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(ReservationConflictException.class)
     public ResponseEntity<Map<String, Object>> handleReservationConflict(ReservationConflictException exception) {
+        reservationMetrics.recordDecline(exception.getReason());
         logger.atDebug()
             .addKeyValue("event", "reservation_declined")
-            .addKeyValue("request_id", MDC.get("request_id"))
             .addKeyValue("reason", exception.getReason().code())
             .log("reservation_declined");
         Map<String, Object> body = new LinkedHashMap<>();
@@ -69,7 +75,6 @@ public class ApiExceptionHandler {
         String requestId = MDC.get("request_id");
         logger.atError()
                 .addKeyValue("event", "unhandled_api_exception")
-                .addKeyValue("request_id", requestId)
                 .setCause(exception)
                 .log("unhandled_api_exception");
 

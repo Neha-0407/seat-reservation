@@ -30,4 +30,7 @@ public interface SeatRepository extends JpaRepository<Seat, UUID> {
         );
 
     Optional<Seat> findByShowIdAndSeatNumber(UUID showId, String seatNumber);
+
+    @Query(value = "SELECT s.id, COUNT(seat.id) FROM shows s LEFT JOIN seats seat ON seat.show_id = s.id AND seat.status = 'AVAILABLE' GROUP BY s.id", nativeQuery = true)
+    List<Object[]> countAvailableSeatsByShow();
 }

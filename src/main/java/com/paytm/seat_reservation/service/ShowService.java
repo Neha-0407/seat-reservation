@@ -11,6 +11,7 @@ import com.paytm.seat_reservation.repository.SeatCategoryRepository;
 import com.paytm.seat_reservation.repository.SeatRepository;
 import com.paytm.seat_reservation.repository.ShowAdminRepository;
 import com.paytm.seat_reservation.repository.ShowRepository;
+import com.paytm.seat_reservation.metrics.ReservationMetrics;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,17 +29,20 @@ public class ShowService {
     private final ShowAdminRepository showAdminRepository;
     private final SeatRepository seatRepository;
     private final SeatCategoryRepository seatCategoryRepository;
+    private final ReservationMetrics reservationMetrics;
 
     public ShowService(
             ShowRepository showRepository,
             ShowAdminRepository showAdminRepository,
             SeatRepository seatRepository,
-            SeatCategoryRepository seatCategoryRepository
+            SeatCategoryRepository seatCategoryRepository,
+            ReservationMetrics reservationMetrics
     ) {
         this.showRepository = showRepository;
         this.showAdminRepository = showAdminRepository;
         this.seatRepository = seatRepository;
         this.seatCategoryRepository = seatCategoryRepository;
+        this.reservationMetrics = reservationMetrics;
     }
 
     @Transactional
@@ -77,6 +81,7 @@ public class ShowService {
             return seat;
         }).toList();
         seatRepository.saveAll(seats);
+        reservationMetrics.registerShow(showId, seats.size());
 
         ShowAdmin showAdmin = new ShowAdmin();
         showAdmin.setId(UUID.randomUUID());

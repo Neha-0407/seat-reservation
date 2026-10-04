@@ -7,6 +7,7 @@ import com.paytm.seat_reservation.dto.ShowStateResponse;
 import com.paytm.seat_reservation.exception.ReservationConflictException;
 import com.paytm.seat_reservation.service.ReservationService;
 import com.paytm.seat_reservation.service.ShowService;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -40,6 +41,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -66,6 +68,9 @@ class SeatReservationApplicationTests {
 
 	@Autowired
 	private MockMvc mockMvc;
+
+	@Autowired
+	private MeterRegistry meterRegistry;
 
 	@Test
 	void createShowEndpointRequiresAdminAndCreatesAvailableSeats() throws Exception {
@@ -101,6 +106,40 @@ class SeatReservationApplicationTests {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.status").value("UP"))
 				.andExpect(jsonPath("$.components.db.status").value("UP"));
+	}
+
+	@Test
+	void prometheusMetricsTrackReservationsReplaysDeclinesAndAvailableSeats() throws Exception {
+		UUID showId = createShow("metrics", 4, List.of("A1"));
+		double confirmedBefore = meterRegistry.counter("seat_reservations.confirmed").count();
+		double replaysBefore = meterRegistry.counter("seat_reservations.idempotent.replays").count();
+		ReservationResponse booking = reserve(showId, "metrics-user", "metrics-key", List.of("A1"));
+
+		assertEquals(confirmedBefore + 1, meterRegistry.counter("seat_reservations.confirmed").count());
+		assertEquals(0, meterRegistry.get("seat_reservation.seats.available")
+				.tag("show_id", showId.toString()).gauge().value());
+
+		reserve(showId, "metrics-user", "metrics-key", List.of("A1"));
+		assertEquals(replaysBefore + 1, meterRegistry.counter("seat_reservations.idempotent.replays").count());
+
+		double seatTakenBefore = meterRegistry.counter(
+				"seat_reservations.declined", "reason", "seat-taken").count();
+		mockMvc.perform(post("/shows/{showId}/reserve", showId)
+					.with(jwt().jwt(token -> token.subject("other-user")))
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("{\"idempotency_key\":\"loser-key\",\"seats\":[\"A1\"]}"))
+				.andExpect(status().isConflict());
+		assertEquals(seatTakenBefore + 1, meterRegistry.counter(
+				"seat_reservations.declined", "reason", "seat-taken").count());
+
+		mockMvc.perform(get("/actuator/prometheus"))
+				.andExpect(status().isOk())
+				.andExpect(content().string(org.hamcrest.Matchers.containsString(
+						"seat_reservations_confirmed_total")));
+
+		reservationService.cancelReservation("metrics-user", booking.getReservationId());
+		assertEquals(1, meterRegistry.get("seat_reservation.seats.available")
+				.tag("show_id", showId.toString()).gauge().value());
 	}
 
 	@Test

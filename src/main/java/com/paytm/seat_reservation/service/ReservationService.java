@@ -18,12 +18,12 @@ import com.paytm.seat_reservation.repository.SeatRepository;
 import com.paytm.seat_reservation.repository.SeatCategoryRepository;
 import com.paytm.seat_reservation.repository.ShowRepository;
 import com.paytm.seat_reservation.repository.UserShowLockRepository;
+import com.paytm.seat_reservation.metrics.ReservationMetrics;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.access.AccessDeniedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -45,6 +45,7 @@ public class ReservationService {
     private final SeatCategoryRepository seatCategoryRepository;
     private final ShowRepository showRepository;
     private final UserShowLockRepository userShowLockRepository;
+    private final ReservationMetrics reservationMetrics;
 
     public ReservationService(
             ReservationRepository reservationRepository,
@@ -52,7 +53,8 @@ public class ReservationService {
             SeatRepository seatRepository,
             SeatCategoryRepository seatCategoryRepository,
             ShowRepository showRepository,
-            UserShowLockRepository userShowLockRepository
+            UserShowLockRepository userShowLockRepository,
+            ReservationMetrics reservationMetrics
     ) {
         this.reservationRepository = reservationRepository;
         this.reservationSeatRepository = reservationSeatRepository;
@@ -60,6 +62,7 @@ public class ReservationService {
         this.seatCategoryRepository = seatCategoryRepository;
         this.showRepository = showRepository;
         this.userShowLockRepository = userShowLockRepository;
+        this.reservationMetrics = reservationMetrics;
     }
 
     @Transactional
@@ -97,10 +100,10 @@ public class ReservationService {
             }
                 logger.atDebug()
                     .addKeyValue("event", "reservation_idempotency_replay")
-                    .addKeyValue("request_id", MDC.get("request_id"))
                     .addKeyValue("show_id", show.getId())
                     .addKeyValue("reservation_id", existing.getId())
                     .log("reservation_idempotency_replay");
+                    reservationMetrics.recordIdempotentReplay();
             return toResponseForSeatIds(existing, reservationSeatRepository.findByIdReservationId(existing.getId()).stream()
                     .map(reservationSeat -> reservationSeat.getId().getSeatId())
                     .toList());
@@ -163,6 +166,7 @@ public class ReservationService {
         }
         seatRepository.saveAll(seats);
         reservationSeatRepository.saveAll(reservationSeats);
+        reservationMetrics.recordConfirmationAfterCommit(show.getId(), seats.size());
 
         return toResponse(reservation, sortedSeatNumbers);
     }
@@ -210,6 +214,7 @@ public class ReservationService {
         reservation.setCancelledAt(OffsetDateTime.now());
         seatRepository.saveAll(seats);
         reservationRepository.save(reservation);
+        reservationMetrics.recordCancellationAfterCommit(reservation.getShowId(), seats.size());
         return toResponseForSeatIds(reservation, seatIds);
     }
 

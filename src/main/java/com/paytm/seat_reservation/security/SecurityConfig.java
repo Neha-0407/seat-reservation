@@ -93,6 +93,7 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.POST, "/shows").hasRole("SHOW_ADMIN")
                     .requestMatchers(HttpMethod.GET, "/shows/{showId}").permitAll()
                     .requestMatchers(HttpMethod.GET, "/actuator/health", "/actuator/health/**").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/actuator/prometheus").permitAll()
                     .requestMatchers(HttpMethod.POST, "/shows/{showId}/reserve", "/reservations/{reservationId}/cancel").authenticated()
                     .requestMatchers(HttpMethod.POST, "/shows/{showId}/seats", "/shows/{showId}/categories").authenticated()
                     .anyRequest().denyAll())
