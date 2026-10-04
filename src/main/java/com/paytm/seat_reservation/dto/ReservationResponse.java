@@ -6,18 +6,29 @@ import java.util.UUID;
 public class ReservationResponse {
 
     private UUID reservationId;
+    private UUID showId;
+    private String userId;
     private String status;
     private Long amountPaise;
-    private List<UUID> seatIds;
+    private List<String> seats;
 
     public ReservationResponse() {
     }
 
-    public ReservationResponse(UUID reservationId, String status, Long amountPaise, List<UUID> seatIds) {
+    public ReservationResponse(
+            UUID reservationId,
+            UUID showId,
+            String userId,
+            String status,
+            Long amountPaise,
+            List<String> seats
+    ) {
         this.reservationId = reservationId;
+        this.showId = showId;
+        this.userId = userId;
         this.status = status;
         this.amountPaise = amountPaise;
-        this.seatIds = seatIds;
+        this.seats = seats;
     }
 
     public UUID getReservationId() {
@@ -26,6 +37,22 @@ public class ReservationResponse {
 
     public void setReservationId(UUID reservationId) {
         this.reservationId = reservationId;
+    }
+
+    public UUID getShowId() {
+        return showId;
+    }
+
+    public void setShowId(UUID showId) {
+        this.showId = showId;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
     }
 
     public String getStatus() {
@@ -44,11 +71,11 @@ public class ReservationResponse {
         this.amountPaise = amountPaise;
     }
 
-    public List<UUID> getSeatIds() {
-        return seatIds;
+    public List<String> getSeats() {
+        return seats;
     }
 
-    public void setSeatIds(List<UUID> seatIds) {
-        this.seatIds = seatIds;
+    public void setSeats(List<String> seats) {
+        this.seats = seats;
     }
 }

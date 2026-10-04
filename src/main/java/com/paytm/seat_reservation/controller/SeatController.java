@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/shows/{showId}/seats")
+@RequestMapping("/shows/{showId}/seats")
 public class SeatController {
 
     private final SeatService seatService;

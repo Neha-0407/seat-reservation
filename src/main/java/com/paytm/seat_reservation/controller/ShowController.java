@@ -1,7 +1,7 @@
 package com.paytm.seat_reservation.controller;
 
 import com.paytm.seat_reservation.dto.CreateShowRequest;
-import com.paytm.seat_reservation.entity.Show;
+import com.paytm.seat_reservation.dto.ShowStateResponse;
 import com.paytm.seat_reservation.service.ShowService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/shows")
+@RequestMapping("/shows")
 public class ShowController {
 
     private final ShowService showService;
@@ -28,12 +28,12 @@ public class ShowController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Show createShow(Authentication authentication, @Valid @RequestBody CreateShowRequest request) {
+    public ShowStateResponse createShow(Authentication authentication, @Valid @RequestBody CreateShowRequest request) {
         return showService.createShow(authentication.getName(), request);
     }
 
     @GetMapping("/{showId}")
-    public Show getShow(@PathVariable UUID showId) {
-        return showService.getShow(showId);
+    public ShowStateResponse getShow(@PathVariable UUID showId) {
+        return showService.getShowState(showId);
     }
 }

@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/shows/{showId}/categories")
+@RequestMapping("/shows/{showId}/categories")
 public class SeatCategoryController {
 
     private final SeatCategoryService seatCategoryService;

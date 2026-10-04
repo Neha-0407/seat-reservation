@@ -1,0 +1,81 @@
+{
+  "realm": "seat-reservation",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": false,
+  "clients": [
+    {
+      "clientId": "seat-reservation-api",
+      "name": "Seat Reservation API",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "bearerOnly": true
+    },
+    {
+      "clientId": "seat-reservation-cli",
+      "name": "Local API test client",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "protocolMappers": [
+        {
+          "name": "seat-reservation-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "seat-reservation-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "false"
+          }
+        }
+      ]
+    }
+  ],
+  "roles": {
+    "realm": [
+      {
+        "name": "show_admin"
+      }
+    ]
+  },
+  "users": [
+    {
+      "username": "show-admin",
+      "enabled": true,
+      "email": "show-admin@example.test",
+      "emailVerified": true,
+      "firstName": "Show",
+      "lastName": "Admin",
+      "realmRoles": ["show_admin"],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "local-admin-password",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "buyer-one",
+      "enabled": true,
+      "email": "buyer-one@example.test",
+      "emailVerified": true,
+      "firstName": "Buyer",
+      "lastName": "One",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "local-buyer-password",
+          "temporary": false
+        }
+      ]
+    }
+  ]
+}

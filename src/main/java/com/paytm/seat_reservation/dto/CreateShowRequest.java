@@ -1,8 +1,13 @@
 package com.paytm.seat_reservation.dto;
 
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
+import java.util.List;
 
 public class CreateShowRequest {
 
@@ -10,16 +15,16 @@ public class CreateShowRequest {
     private String name;
 
     @NotNull
-    @Min(1)
+    @Min(0)
     private Long pricePaise;
 
-    @NotNull
-    @Min(1)
-    private Integer totalSeats;
+    @NotEmpty
+    private List<@NotBlank @Size(max = 20) String> seats;
 
     @NotNull
     @Min(1)
-    private Integer perUserLimit;
+    @Max(4)
+    private Integer perUserLimit = 4;
 
     public CreateShowRequest() {
     }
@@ -40,12 +45,12 @@ public class CreateShowRequest {
         this.pricePaise = pricePaise;
     }
 
-    public Integer getTotalSeats() {
-        return totalSeats;
+    public List<String> getSeats() {
+        return seats;
     }
 
-    public void setTotalSeats(Integer totalSeats) {
-        this.totalSeats = totalSeats;
+    public void setSeats(List<String> seats) {
+        this.seats = seats;
     }
 
     public Integer getPerUserLimit() {

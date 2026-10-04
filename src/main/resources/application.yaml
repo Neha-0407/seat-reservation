@@ -1,6 +1,9 @@
 spring:
   application:
     name: seat-reservation
+
+  jackson:
+    property-naming-strategy: SNAKE_CASE
   
   datasource:
     url: jdbc:postgresql://localhost:5432/seat_reservation
@@ -18,6 +21,13 @@ spring:
   
   flyway: 
     enabled: true 
+
+app:
+  security:
+    jwt:
+      jwk-set-uri: ${JWT_JWK_SET_URI:http://localhost:8081/realms/seat-reservation/protocol/openid-connect/certs}
+      issuer-uri: ${JWT_ISSUER_URI:http://localhost:8081/realms/seat-reservation}
+      audience: ${JWT_AUDIENCE:seat-reservation-api}
     
   server: 
     port: 8080
