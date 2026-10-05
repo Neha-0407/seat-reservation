@@ -46,7 +46,7 @@ The script creates three shows and leaves them in the database for inspection. I
 
 ## Render Deployment
 
-The [Render Blueprint](render.yaml) defines the API, a production-configured Keycloak realm, and separate Postgres databases. Push this configuration to the public GitHub repository, then in Render choose **New + > Blueprint**, connect `Neha-0407/seat-reservation`, and approve the resources. Render prompts for `KC_BOOTSTRAP_ADMIN_PASSWORD`; do not put that secret in Git. The free Postgres databases are temporary (Render free databases expire), and free web services can sleep, so this is a demo deployment rather than a 20,000-concurrent production capacity claim.
+The [Render Blueprint](render.yaml) defines the API, a production-configured Keycloak realm, and one shared Postgres database; Keycloak uses its own `keycloak` schema. Push this configuration to the public GitHub repository, then in Render choose **New + > Blueprint**, connect `Neha-0407/seat-reservation`, and approve the resources. Render prompts for `KC_BOOTSTRAP_ADMIN_PASSWORD`; do not put that secret in Git. The free Postgres database is temporary (Render free databases expire), and free web services can sleep, so this is a demo deployment rather than a 20,000-concurrent production capacity claim.
 
 After the services deploy, use the API service's `onrender.com` URL. Create a user with the Keycloak registration page to obtain buyer tokens. Create a separate `show_admin` user in the Keycloak admin console and assign it the realm role before using `POST /shows`. The local demo users and passwords are deliberately not imported in the Render realm. Render's service logs are visible in the Render dashboard to service operators; they are not a public log endpoint.
 

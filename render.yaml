@@ -16,12 +16,11 @@ services:
       - key: KC_PROXY_HEADERS
         value: xforwarded
       - key: KC_HOSTNAME
-        fromService:
-          type: web
-          name: seat-reservation-keycloak
-          envVarKey: RENDER_EXTERNAL_URL
+        value: https://seat-reservation-keycloak.onrender.com
       - key: KC_DB
         value: postgres
+      - key: KC_DB_SCHEMA
+        value: keycloak
       - key: KC_DB_URL_HOST
         fromDatabase:
           name: seat-reservation-keycloak-db
@@ -88,9 +87,5 @@ services:
 databases:
   - name: seat-reservation-db
     databaseName: seat_reservation
-    plan: free
-    ipAllowList: []
-  - name: seat-reservation-keycloak-db
-    databaseName: keycloak
     plan: free
     ipAllowList: []
