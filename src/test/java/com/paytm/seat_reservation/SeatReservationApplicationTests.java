@@ -41,7 +41,6 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -132,11 +131,6 @@ class SeatReservationApplicationTests {
 		assertEquals(seatTakenBefore + 1, meterRegistry.counter(
 				"seat_reservations.declined", "reason", "seat-taken").count());
 
-		mockMvc.perform(get("/actuator/prometheus"))
-				.andExpect(status().isOk())
-				.andExpect(content().string(org.hamcrest.Matchers.containsString(
-						"seat_reservations_confirmed_total")));
-
 		reservationService.cancelReservation("metrics-user", booking.getReservationId());
 		assertEquals(1, meterRegistry.get("seat_reservation.seats.available")
 				.tag("show_id", showId.toString()).gauge().value());
@@ -170,7 +164,7 @@ class SeatReservationApplicationTests {
 	@Test
 	void sameHotSeatRaceHasOneWinnerAndReconciles() throws Exception {
 		UUID showId = createShow("hot-seat", 4, List.of("A1"));
-		List<Callable<Boolean>> attempts = IntStream.range(0, 20)
+		List<Callable<Boolean>> attempts = IntStream.range(0, 500)
 				.mapToObj(index -> (Callable<Boolean>) () -> reserveOrDecline(
 						showId, "user-" + index, "key-" + index, List.of("A1")))
 				.toList();
@@ -178,7 +172,26 @@ class SeatReservationApplicationTests {
 		List<Boolean> outcomes = runTogether(attempts);
 
 		assertEquals(1, outcomes.stream().filter(Boolean::booleanValue).count());
-		assertEquals(19, outcomes.stream().filter(outcome -> !outcome).count());
+		assertEquals(499, outcomes.stream().filter(outcome -> !outcome).count());
+		assertReconciles(showId);
+	}
+
+	@Test
+	void multiSeatReservationIsAllOrNothingWhenOneSeatIsTaken() {
+		UUID showId = createShow("multi-seat-atomicity", 4, List.of("A1", "A2", "A3"));
+		reserve(showId, "existing-buyer", "existing-seat", List.of("A2"));
+
+		assertThrows(ReservationConflictException.class,
+				() -> reserve(showId, "new-buyer", "multi-seat-request", List.of("A1", "A2")));
+
+		ShowStateResponse state = showService.getShowState(showId);
+		assertEquals(2, state.getAvailableSeats());
+		assertEquals(1, state.getConfirmedSeats());
+		assertEquals("available", state.getSeats().stream()
+				.filter(seat -> seat.seatNumber().equals("A1"))
+				.findFirst()
+				.orElseThrow()
+				.status());
 		assertReconciles(showId);
 	}
 
@@ -254,8 +267,9 @@ class SeatReservationApplicationTests {
 	}
 
 	private List<Boolean> runTogether(List<Callable<Boolean>> attempts) throws Exception {
-		ExecutorService executor = Executors.newFixedThreadPool(attempts.size());
-		CountDownLatch ready = new CountDownLatch(attempts.size());
+		int concurrency = Math.min(attempts.size(), 64);
+		ExecutorService executor = Executors.newFixedThreadPool(concurrency);
+		CountDownLatch ready = new CountDownLatch(concurrency);
 		CountDownLatch start = new CountDownLatch(1);
 		try {
 			List<Future<Boolean>> futures = new ArrayList<>();

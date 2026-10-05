@@ -26,5 +26,54 @@ services:
       - "8081:8080"
     volumes:
       - ./docker/keycloak:/opt/keycloak/data/import:ro
+  prometheus:
+    image: prom/prometheus:v3.2.1
+    container_name: seat-reservation-prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+  grafana:
+    image: grafana/grafana:11.5.2
+    container_name: seat-reservation-grafana
+    depends_on:
+      - prometheus
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./docker/grafana/dashboards:/var/lib/grafana/dashboards:ro
+  app:
+    profiles: [app]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: seat-reservation-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/seat_reservation
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      JWT_JWK_SET_URI: http://keycloak:8080/realms/seat-reservation/protocol/openid-connect/certs
+      JWT_ISSUER_URI: http://localhost:8081/realms/seat-reservation
+      SERVER_PORT: 8080
+    ports:
+      - "8080:8080"
 volumes:
   postgres_data:
+  prometheus_data:
+  grafana_data:
