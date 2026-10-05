@@ -1,0 +1,96 @@
+services:
+  - type: web
+    name: seat-reservation-keycloak
+    runtime: docker
+    plan: free
+    dockerfilePath: ./docker/keycloak/Dockerfile.render
+    dockerContext: ./docker/keycloak
+    healthCheckPath: /realms/seat-reservation/.well-known/openid-configuration
+    envVars:
+      - key: PORT
+        value: "10000"
+      - key: KC_HTTP_ENABLED
+        value: "true"
+      - key: KC_HTTP_PORT
+        value: "10000"
+      - key: KC_PROXY_HEADERS
+        value: xforwarded
+      - key: KC_HOSTNAME
+        fromService:
+          type: web
+          name: seat-reservation-keycloak
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: KC_DB
+        value: postgres
+      - key: KC_DB_URL_HOST
+        fromDatabase:
+          name: seat-reservation-keycloak-db
+          property: host
+      - key: KC_DB_URL_PORT
+        fromDatabase:
+          name: seat-reservation-keycloak-db
+          property: port
+      - key: KC_DB_URL_DATABASE
+        fromDatabase:
+          name: seat-reservation-keycloak-db
+          property: database
+      - key: KC_DB_USERNAME
+        fromDatabase:
+          name: seat-reservation-keycloak-db
+          property: user
+      - key: KC_DB_PASSWORD
+        fromDatabase:
+          name: seat-reservation-keycloak-db
+          property: password
+      - key: KC_BOOTSTRAP_ADMIN_USERNAME
+        value: admin
+      - key: KC_BOOTSTRAP_ADMIN_PASSWORD
+        sync: false
+
+  - type: web
+    name: seat-reservation-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /actuator/health/readiness
+    envVars:
+      - key: PORT
+        value: "10000"
+      - key: DB_HOST
+        fromDatabase:
+          name: seat-reservation-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: seat-reservation-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: seat-reservation-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: seat-reservation-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: seat-reservation-db
+          property: password
+      - key: KEYCLOAK_PUBLIC_URL
+        fromService:
+          type: web
+          name: seat-reservation-keycloak
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: JWT_AUDIENCE
+        value: seat-reservation-api
+
+databases:
+  - name: seat-reservation-db
+    databaseName: seat_reservation
+    plan: free
+    ipAllowList: []
+  - name: seat-reservation-keycloak-db
+    databaseName: keycloak
+    plan: free
+    ipAllowList: []

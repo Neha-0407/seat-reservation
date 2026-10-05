@@ -6,9 +6,9 @@ spring:
     property-naming-strategy: SNAKE_CASE
   
   datasource:
-    url: jdbc:postgresql://localhost:5432/seat_reservation
-    username: postgres
-    password: postgres
+    url: "${SPRING_DATASOURCE_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:seat_reservation}}"
+    username: "${SPRING_DATASOURCE_USERNAME:${DB_USER:postgres}}"
+    password: "${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:postgres}}"
     driver-class-name: org.postgresql.Driver
   
   jpa: 
@@ -55,9 +55,9 @@ logging:
 app:
   security:
     jwt:
-      jwk-set-uri: ${JWT_JWK_SET_URI:http://localhost:8081/realms/seat-reservation/protocol/openid-connect/certs}
-      issuer-uri: ${JWT_ISSUER_URI:http://localhost:8081/realms/seat-reservation}
+      jwk-set-uri: ${JWT_JWK_SET_URI:${KEYCLOAK_PUBLIC_URL:http://localhost:8081}/realms/seat-reservation/protocol/openid-connect/certs}
+      issuer-uri: ${JWT_ISSUER_URI:${KEYCLOAK_PUBLIC_URL:http://localhost:8081}/realms/seat-reservation}
       audience: ${JWT_AUDIENCE:seat-reservation-api}
-    
-  server: 
-    port: 8080
+
+server:
+  port: ${PORT:8080}

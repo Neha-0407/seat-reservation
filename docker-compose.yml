@@ -25,7 +25,7 @@ services:
     ports:
       - "8081:8080"
     volumes:
-      - ./docker/keycloak:/opt/keycloak/data/import:ro
+      - ./docker/keycloak/seat-reservation-realm.json:/opt/keycloak/data/import/seat-reservation-realm.json:ro
   prometheus:
     image: prom/prometheus:v3.2.1
     container_name: seat-reservation-prometheus
@@ -72,7 +72,7 @@ services:
       JWT_ISSUER_URI: http://localhost:8081/realms/seat-reservation
       SERVER_PORT: 8080
     ports:
-      - "8080:8080"
+      - "${APP_PORT:-8080}:8080"
 volumes:
   postgres_data:
   prometheus_data:

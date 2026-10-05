@@ -1,0 +1,11 @@
+.git
+.gradle
+build
+bin
+out
+target
+.idea
+.vscode
+burst-user-tokens.txt
+__pycache__
+*.py[cod]
